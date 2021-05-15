@@ -24,6 +24,8 @@ export default function GraphContainer() {
       let { nodes, edges } = event;
       setSelectedEdges(edges);
       setSelectedNode(nodes);
+      setAddNode(false);
+      setAddEdge(false);
     }
   };
   const deleteNode= () =>{
@@ -63,10 +65,12 @@ export default function GraphContainer() {
     setAddEdge(false);
   }
   const onSetAddNode=(value)=>{
+    reset();
     setAddNode(value);
     setAddEdge(false);
   }
   const onSetAddEdge=(value)=>{
+    reset();
     setAddEdge(value);
     setAddNode(false);
   }
@@ -131,8 +135,11 @@ export default function GraphContainer() {
                   {errors.key &&
                   <h6 style={{color:"red"}}>
                     {errors.key.type==='validate'?'This key is already taken':'Please enter a key'}
+                    <br/>
+                    Used keys: {[ ...graphState.edges.map(edge=>edge.id), ...graphState.nodes.map(node=>node.id)].join(', ')}
                   </h6>}
                   <button className="btn btn-primary mt-3">Submit</button>
+                  <button className="btn btn-primary mt-3 ml-3" onClick={()=>onSetAddNode(!addNode)}>Close</button>
                 </form>
               </Row>
             </Row>
@@ -192,8 +199,11 @@ export default function GraphContainer() {
                   {errors.key &&
                   <h6 style={{color:"red"}}>
                     {errors.key.type==='validate'?'This key is already taken':'Please enter a key'}
+                    <br/>
+                    Used keys: {[ ...graphState.edges.map(edge=>edge.id), ...graphState.nodes.map(node=>node.id)].join(', ')}
                   </h6>}
                   <button className="btn btn-primary mt-3">Submit</button>
+                  <button className="btn btn-primary mt-3 ml-3" onClick={()=>onSetAddEdge(!addEdge)}>Close</button>
                 </form>
               </Row>
             </>
