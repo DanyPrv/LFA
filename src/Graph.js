@@ -295,8 +295,7 @@ export default function GraphContainer() {
                     <br/>
                     Used keys: {[ ...graphState.edges.map(edge=>edge.id), ...graphState.nodes.map(node=>node.id)].join(', ')}
                   </h6>}
-                  <button className="btn btn-primary mt-3">Submit</button>
-                  <button className="btn btn-primary mt-3 ml-3" onClick={()=>onSetAddNode(!addNode)}>Close</button>
+                  <button className="btn btn-primary mt-3">Save</button>
                 </form>
               </Row>
             </Row>
@@ -367,8 +366,7 @@ export default function GraphContainer() {
                     <br/>
                     Used keys: {[ ...graphState.edges.map(edge=>edge.id), ...graphState.nodes.map(node=>node.id)].join(', ')}
                   </h6>}
-                  <button className="btn btn-primary mt-3">Submit</button>
-                  <button className="btn btn-primary mt-3 ml-3" onClick={()=>onSetAddEdge(!addEdge)}>Close</button>
+                  <button className="btn btn-primary mt-3">Save</button>
                 </form>
               </Row>
             </>
