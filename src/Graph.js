@@ -1,5 +1,6 @@
 import './App.css';
 import React, {useState} from "react";
+import cloneDeep from 'lodash/cloneDeep';
 import {Row, Col, Container} from 'react-bootstrap';
 import {initialGraph} from "./helpers";
 import { useForm } from "react-hook-form"
@@ -21,7 +22,10 @@ export default function GraphContainer() {
 
   const events = {
     select: function(event) {
+      setSelectedEdges([]);
+      setSelectedNode([]);
       let { nodes, edges } = event;
+      reset();
       setSelectedEdges(edges);
       setSelectedNode(nodes);
       setAddNode(false);
@@ -64,13 +68,54 @@ export default function GraphContainer() {
     reset();
     setAddEdge(false);
   }
+  const editNodeToGraph = (data) => {
+    let newGraph = cloneDeep(graphState);
+    newGraph.nodes.forEach(node=>{
+      if(node.id===selectedNode[0]){
+        node.id = data.key;
+        node.label = data.value;
+      }
+    })
+    newGraph.edges.forEach(edge=>{
+      if(edge.from === selectedNode[0]){
+        edge.from = data.key;
+      }
+      if(edge.to === selectedNode[0]){
+        edge.to = data.key;
+      }
+    })
+    setSelectedNode([]);
+    setSelectedEdges([]);
+    setGraphState(newGraph);
+    reset();
+  }
+  const editEdgeToGraph = (data) => {
+    let newGraph = cloneDeep(graphState);
+    newGraph.edges.forEach(edge=>{
+      if(edge.id === selectedEdges[0]){
+        edge.from = data.from;
+        edge.to = data.to;
+        edge.id = data.key;
+      }
+    })
+    setSelectedNode([]);
+    setSelectedEdges([]);
+    setGraphState(newGraph);
+    reset();
+    setAddEdge(false);
+  }
+
   const onSetAddNode=(value)=>{
     reset();
     setAddNode(value);
     setAddEdge(false);
+    setSelectedEdges([]);
+    setSelectedNode([]);
   }
   const onSetAddEdge=(value)=>{
     reset();
+    setSelectedEdges([]);
+    setSelectedNode([]);
     setAddEdge(value);
     setAddNode(false);
   }
@@ -126,8 +171,8 @@ export default function GraphContainer() {
                     <input {...register("key",{
                       validate: value =>
                         ![
-                          ...graphState.edges.map(edge=>edge.id.toString()),
-                          ...graphState.nodes.map(node=>node.id.toString())
+                          ...graphState.edges.map(edge=>edge.id),
+                          ...graphState.nodes.map(node=>node.id)
                         ].includes(value),
                       required: true
                     })} />
@@ -171,8 +216,8 @@ export default function GraphContainer() {
                     </div>
                     <select className="col-md-auto" {...register("to", {
                       validate: value => {
-                        const fromMatch = graphState.edges.filter(edge=> edge.from.toString() === getValues('from'));
-                        return !fromMatch.map(edge=>edge.to.toString()).includes(value);
+                        const fromMatch = graphState.edges.filter(edge=> edge.from === getValues('from'));
+                        return !fromMatch.map(edge=>edge.to).includes(value);
                       }
                     })} >
                       {graphState.nodes.map(node=> <option id={`to-${node.id}`} value={node.id}>{`${node.id} | ${node.label}`}</option>)}
@@ -190,9 +235,129 @@ export default function GraphContainer() {
                     <input {...register("key",{
                       validate: value =>
                         ![
-                          ...graphState.edges.map(edge=>edge.id.toString()),
-                          ...graphState.nodes.map(node=>node.id.toString())
+                          ...graphState.edges.map(edge=>edge.id),
+                          ...graphState.nodes.map(node=>node.id)
                         ].includes(value),
+                      required:true
+                    })} />
+                  </div>
+                  {errors.key &&
+                  <h6 style={{color:"red"}}>
+                    {errors.key.type==='validate'?'This key is already taken':'Please enter a key'}
+                    <br/>
+                    Used keys: {[ ...graphState.edges.map(edge=>edge.id), ...graphState.nodes.map(node=>node.id)].join(', ')}
+                  </h6>}
+                  <button className="btn btn-primary mt-3">Submit</button>
+                  <button className="btn btn-primary mt-3 ml-3" onClick={()=>onSetAddEdge(!addEdge)}>Close</button>
+                </form>
+              </Row>
+            </>
+            }
+
+            {selectedNode.length>0 &&
+            <Row>
+              <Row>
+                <h3 className="ml-3 mt-3">Edit node</h3>
+              </Row>
+              <Row className="ml-3 mt-3">
+                <form onSubmit={handleSubmit(editNodeToGraph)}>
+                  <div className="input-group">
+                    <div className="input-group-prepend">
+                      <span className="input-group-text">Value:</span>
+                    </div>
+                    <input
+                      defaultValue={graphState.nodes.filter(node=>node.id === selectedNode[0])[0].label || ''}
+                      {...register("value",{required:true})}
+                    />
+                  </div>
+                  {errors.value &&
+                  <h6 style={{color:"red"}}>
+                    Please enter a value
+                  </h6>}
+                  <div className="input-group mt-3">
+                    <div className="input-group-prepend">
+                      <span className="input-group-text">Key</span>
+                    </div>
+                    <input
+                      defaultValue={graphState.nodes.filter(node=>node.id === selectedNode[0])[0].id || ''}
+                      {...register("key",{
+                      validate: value =>
+                        ![
+                          ...graphState.edges.map(edge=>edge.id),
+                          ...graphState.nodes.map(node=>node.id)
+                        ].includes(value) || value===selectedNode[0],
+                      required: true
+                    })} />
+                  </div>
+                  {errors.key &&
+                  <h6 style={{color:"red"}}>
+                    {errors.key.type==='validate'?'This key is already taken':'Please enter a key'}
+                    <br/>
+                    Used keys: {[ ...graphState.edges.map(edge=>edge.id), ...graphState.nodes.map(node=>node.id)].join(', ')}
+                  </h6>}
+                  <button className="btn btn-primary mt-3">Submit</button>
+                  <button className="btn btn-primary mt-3 ml-3" onClick={()=>onSetAddNode(!addNode)}>Close</button>
+                </form>
+              </Row>
+            </Row>
+            }
+
+            {selectedEdges.length === 1 && selectedNode.length === 0 &&
+            <>
+              <Row>
+                <h3 className="ml-3 mt-3">Edit edge</h3>
+              </Row>
+              <Row className="ml-3 mt-3">
+                <form onSubmit={handleSubmit(editEdgeToGraph)}>
+                  <div className="input-group">
+                    <div className="input-group-prepend">
+                      <span className="input-group-text">From:</span>
+                    </div>
+                    <select
+                      defaultValue={graphState.edges.filter(edge=>edge.id === selectedEdges[0])[0].from || ''}
+                      {...register("from")} className="col-md-auto">
+                      {graphState.nodes.map(node=> <option id={`from-${node.id}`} value={node.id}>{`${node.id} | ${node.label}`}</option>)}
+                    </select>
+                  </div>
+                  {errors.from &&
+                  <h6 style={{color:"red"}}>
+                    Please enter a value
+                  </h6>}
+
+                  <div className="input-group mt-3">
+                    <div className="input-group-prepend">
+                      <span className="input-group-text">To</span>
+                    </div>
+                    <select
+                      className="col-md-auto"
+                      defaultValue={graphState.edges.filter(edge=>edge.id === selectedEdges[0])[0].to || ''}
+                      {...register("to", {
+                      validate: value => {
+                        const fromMatch = graphState.edges.filter(edge=>
+                          edge.from === getValues('from') && edge.id !== selectedEdges[0]);
+                        return !fromMatch.map(edge=>edge.to).includes(value);
+                      }
+                    })} >
+                      {graphState.nodes.map(node=> <option id={`to-${node.id}`} value={node.id}>{`${node.id} | ${node.label}`}</option>)}
+                    </select>
+                  </div>
+                  {errors.to &&
+                  <h6 style={{color:"red"}}>
+                    This edge already exist
+                  </h6>}
+
+                  <div className="input-group mt-3">
+                    <div className="input-group-prepend">
+                      <span className="input-group-text">Key</span>
+                    </div>
+                    <input
+                      defaultValue={selectedEdges[0]}
+                      {...register("key",{
+                      validate: value =>
+                        ![
+                          ...graphState.edges.map(edge=>edge.id),
+                          ...graphState.nodes.map(node=>node.id)
+                        ].includes(value) || value===selectedEdges[0],
                       required:true
                     })} />
                   </div>
